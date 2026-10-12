@@ -38,7 +38,7 @@
 
 ## Supported Rust Versions (MSRV)
 
-The current MSRV (minimum supported rust version) is 1.88.
+The common crates declare an MSRV (minimum supported Rust version) of 1.88. The CSP benchmark adapter CI uses Rust 1.95 for Jolt, Rust 1.98.1 for Miden, and nightly-2026-03-04 for RISC Zero host builds. The raw Rust guest tests use nightly-2026-03-04; RISC Zero's SDK guest compiler uses Rust 1.97.0.
 
 ## Overview
 
@@ -176,12 +176,12 @@ OutputHashedPlatform::<OpenVMPlatform, Sha256>::write_whole_output(&large_output
 | zkVM      | Version                                                                | GPU |
 | --------- | ---------------------------------------------------------------------- | --- |
 | Airbender | [`0.5.2`](https://github.com/matter-labs/zksync-airbender/tree/v0.5.2) | Yes |
-| Jolt      | [`2e05fe88`](https://github.com/a16z/jolt/tree/2e05fe88)               | No  |
-| Miden     | [`0.21.0`](https://github.com/0xMiden/miden-vm/tree/v0.21.0)           | No  |
+| Jolt      | [`2a85f764`](https://github.com/a16z/jolt/tree/2a85f76476daee22dea4234a5fa10c4c89e732be)               | No  |
+| Miden     | [`0.34.0`](https://github.com/0xMiden/miden-vm/tree/v0.34.0)           | No  |
 | Nexus     | [`0.3.6`](https://github.com/nexus-xyz/nexus-zkvm/tree/v0.3.6)         | No  |
 | OpenVM    | [`1.4.3`](https://github.com/openvm-org/openvm/tree/v1.4.3)            | Yes |
 | Pico      | [`1.3.0`](https://github.com/brevis-network/pico/tree/v1.3.0)          | No  |
-| Risc0     | [`3.0.4`](https://github.com/risc0/risc0/tree/v3.0.4)                  | Yes |
+| Risc0     | [`3.0.6`](https://github.com/risc0/risc0/tree/v3.0.6)                  | Yes |
 | SP1       | [`6.0.1`](https://github.com/succinctlabs/sp1/tree/v6.0.1)             | Yes |
 | Ziren     | [`1.2.4`](https://github.com/ProjectZKM/Ziren/tree/v1.2.4)             | No  |
 | Zisk      | [`0.15.0`](https://github.com/0xPolygonHermez/zisk/tree/v0.15.0)       | Yes |
@@ -438,6 +438,8 @@ ere/
 ## Contributing
 
 PRs and issues are welcome!
+
+For CSP benchmarks, CI runs formatting and common crate checks, plus Clippy, unit tests, and CPU Docker integration tests for Jolt, Miden, and RISC Zero. The zkVM test jobs build their required Docker images locally. Workflows for other zkVMs, image publishing, release tagging, and dependency version monitoring are inactive in `.github/disabled-workflows/`. Standalone CUDA and cluster image builds are disabled.
 
 ## Disclaimer
 

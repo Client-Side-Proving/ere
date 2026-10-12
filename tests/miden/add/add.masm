@@ -3,8 +3,8 @@
 use miden::core::sys
 
 begin
-    adv_push.1
-    adv_push.1
+    adv_push
+    adv_push
     
     add
 

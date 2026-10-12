@@ -5,14 +5,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 on:
-  workflow_run:
-    workflows: ['Build and push images']
-    types: [completed]
+  push:
+    branches:
+      - master
   pull_request:
 
 jobs:
   test:
-    if: github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     uses: ./.github/workflows/test-zkvm.yml
     with:
       zkvm: miden

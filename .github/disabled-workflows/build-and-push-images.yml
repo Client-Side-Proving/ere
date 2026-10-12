@@ -1,3 +1,4 @@
+# Inactive workflow retained for reference in the CSP benchmark fork.
 name: Build and push images
 
 on:

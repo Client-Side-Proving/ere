@@ -3,7 +3,7 @@ use crate::{
     program::{MidenProgram, MidenSerdeWrapper},
 };
 use ere_zkvm_interface::compiler::Compiler;
-use miden_assembly::Assembler;
+use miden_assembly::{Assembler, Linkage};
 use miden_core_lib::CoreLibrary;
 use std::{fs, path::Path};
 
@@ -35,11 +35,14 @@ impl Compiler for MidenAsm {
 
         // Compile using Miden assembler
         let assembler = Assembler::default()
-            .with_dynamic_library(CoreLibrary::default())
+            .with_package(CoreLibrary::default().package(), Linkage::Dynamic)
             .map_err(Error::LoadCoreLibrary)?;
 
-        let program = assembler
-            .assemble_program(&source)
+        let package = assembler
+            .assemble_program(dir_name, source.as_str())
+            .map_err(Error::AssemblyCompilation)?;
+        let program = package
+            .try_into_program()
             .map_err(Error::AssemblyCompilation)?;
 
         Ok(MidenSerdeWrapper(program))

@@ -2,7 +2,7 @@ ARG BASE_IMAGE=ere-base:latest
 
 FROM $BASE_IMAGE
 
-# The ere-base image provides Rust, Cargo (with a default nightly), and common tools.
+# The ere-base image provides Rust, Cargo, and common tools.
 # We operate as root for SDK installation.
 
 # Copy the Jolt SDK (CLI) installer script from the workspace context
@@ -10,7 +10,13 @@ COPY --chmod=755 scripts/sdk_installers/install_jolt_sdk.sh /tmp/install_jolt_sd
 
 # Run the Jolt CLI installation script.
 # This script installs the 'jolt' binary to $CARGO_HOME/bin.
-RUN /tmp/install_jolt_sdk.sh && rm /tmp/install_jolt_sdk.sh # Clean up the script
+RUN /tmp/install_jolt_sdk.sh \
+    && rustup component add clippy rustfmt --toolchain 1.95 \
+    && rustup default 1.95 \
+    && rm /tmp/install_jolt_sdk.sh
+
+RUN rustup toolchain install nightly-2026-03-04 --profile minimal --component rust-src
+ENV ERE_RUST_TOOLCHAIN="nightly-2026-03-04"
 
 # The jolt CLI is installed in $CARGO_HOME/bin, which is already in PATH from ere-base.
 # Verify jolt CLI is accessible.

@@ -5,9 +5,9 @@ use miden::core::sys
 
 begin
     # Read inputs from advice stack
-    adv_push.1  # fib_a
-    adv_push.1  # fib_b
-    adv_push.1  # n
+    adv_push  # fib_a
+    adv_push  # fib_b
+    adv_push  # n
     
     # Compute fibonacci
     dup neq.0

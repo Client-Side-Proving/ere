@@ -11,3 +11,14 @@ impl JoltProgram {
         &self.elf
     }
 }
+
+#[cfg(any(feature = "compiler", feature = "zkvm"))]
+impl jolt_sdk::host::JoltProgramSource for JoltProgram {
+    fn get_elf_contents(&self) -> Option<Vec<u8>> {
+        Some(self.elf.clone())
+    }
+
+    fn get_elf_compute_advice_contents(&self) -> Option<Vec<u8>> {
+        None
+    }
+}

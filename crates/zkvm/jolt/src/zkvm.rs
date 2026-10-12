@@ -7,8 +7,8 @@ use ere_zkvm_interface::zkvm::{
     CommonError, Input, ProgramExecutionReport, ProgramProvingReport, Proof, ProofKind,
     ProverResource, ProverResourceKind, PublicValues, zkVM,
 };
-use jolt_ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use std::{env, io::Cursor, time::Instant};
+use jolt_sdk::{deserialize_verifier_object, serialize_verifier_object};
+use std::time::Instant;
 
 mod error;
 mod sdk;
@@ -29,7 +29,7 @@ impl EreJolt {
                 [ProverResourceKind::Cpu],
             ))?;
         }
-        let sdk = JoltSdk::new(program.elf(), JoltConfig::from_env());
+        let sdk = JoltSdk::new(program, JoltConfig::from_env())?;
         Ok(EreJolt { sdk })
     }
 }
@@ -77,9 +77,7 @@ impl zkVM for EreJolt {
         let (public_values, proof) = self.sdk.prove(input.stdin())?;
         let proving_time = start.elapsed();
 
-        let mut proof_bytes = Vec::new();
-        proof
-            .serialize_compressed(&mut proof_bytes)
+        let proof_bytes = serialize_verifier_object(&proof)
             .map_err(|err| CommonError::serialize("proof", "jolt", err))?;
 
         Ok((
@@ -97,7 +95,7 @@ impl zkVM for EreJolt {
             )))
         };
 
-        let proof = JoltProof::deserialize_compressed(&mut Cursor::new(proof))
+        let proof = deserialize_verifier_object::<JoltProof>(proof)
             .map_err(|err| CommonError::deserialize("proof", "jolt", err))?;
 
         let public_values = self.sdk.verify(proof)?;

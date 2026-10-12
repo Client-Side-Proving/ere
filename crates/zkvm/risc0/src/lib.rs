@@ -2,21 +2,21 @@
 //!
 //! # Requirements
 //!
-//! To install all requirements, run [`install_risc0_sdk.sh`] from the Ere
+//! To install all requirements, run `scripts/sdk_installers/install_risc0_sdk.sh` from the Ere
 //! repository at the same git revision as your `ere-risc0` dependency.
 //!
 //! To install `r0vm-cuda` (with GPU proving support), make sure CUDA 12.9 is
-//! installed, run [`install_risc0_sdk.sh`] with env `CUDA=1` set.
+//! installed, run `scripts/sdk_installers/install_risc0_sdk.sh` with env `CUDA=1` set.
 //!
 //! ## `Compiler` requirements
 //!
 //! - [`rzup`]
-//! - Installation via `rzup install` - Custom Rust toolchain used by `RustRv32imaCustomized`
+//! - `rzup install rust 1.97.0` - Custom Rust toolchain used by `RustRv32imaCustomized`
 //!
 //! ## `zkVM` requirements
 //!
 //! - [`rzup`]
-//! - Installation via `rzup install`
+//! - `rzup install r0vm 3.0.6`
 //! - `r0vm-cuda` - Used by `zkVM::prove` if `ProverResource::Gpu` is
 //!   selected
 //! - `docker` - Used by `zkVM::prove` if `ProofKind::Groth16` is selected
@@ -41,7 +41,6 @@
 //! | `Network` |    No     |
 //! | `Cluster` |    No     |
 //!
-//! [`install_risc0_sdk.sh`]: https://github.com/eth-act/ere/blob/master/scripts/sdk_installers/install_risc0_sdk.sh
 //! [`rzup`]: https://risczero.com/install
 
 #![cfg_attr(

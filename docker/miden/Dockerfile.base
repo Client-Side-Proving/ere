@@ -2,9 +2,10 @@ ARG BASE_IMAGE=ere-base:latest
 
 FROM $BASE_IMAGE
 
-RUN rustup default 1.90.0
+RUN rustup toolchain install 1.98.1 --profile minimal --component clippy,rustfmt \
+    && rustup default 1.98.1
 
 # Miden Configuration
-ENV MIDEN_VERSION="v0.21.0"
+ENV MIDEN_VERSION="v0.34.0"
 
 CMD ["/bin/bash"]

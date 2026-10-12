@@ -1,7 +1,7 @@
 use crate::{compiler::Error, program::JoltProgram};
 use ere_compile_utils::{CommonError, cargo_metadata, rustup_active_toolchain, rustup_add_target};
 use ere_zkvm_interface::compiler::Compiler;
-use jolt_core::host::Program;
+use jolt_sdk::host::Program;
 use std::{env::set_current_dir, fs, path::Path};
 use tempfile::tempdir;
 

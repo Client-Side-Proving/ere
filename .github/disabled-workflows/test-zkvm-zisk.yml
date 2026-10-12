@@ -1,4 +1,5 @@
-name: Test and clippy Airbender
+# Inactive workflow retained for reference in the CSP benchmark fork.
+name: Test and clippy ZisK
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,6 +16,8 @@ jobs:
     if: github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     uses: ./.github/workflows/test-zkvm.yml
     with:
-      zkvm: airbender
-      skip_prove_test: true
+      zkvm: zisk
       cuda: true
+      cuda_archs: '120'
+      cluster: true
+      skip_prove_test: true

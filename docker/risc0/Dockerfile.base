@@ -7,7 +7,12 @@ ARG CUDA
 
 ARG RUSTFLAGS
 
-# Install protoc with same version as https://github.com/risc0/risc0/blob/v3.0.3/bento/dockerfiles/agent.dockerfile#L24-L26.
+ENV ERE_RUST_TOOLCHAIN="nightly-2026-03-04"
+
+RUN rustup toolchain install "$ERE_RUST_TOOLCHAIN" --profile minimal --component clippy,rustfmt,rust-src \
+    && rustup default nightly-2026-03-04
+
+# Install protoc for building r0vm-cuda.
 # Only install when argument `CUDA` is set, in order to build `r0vm-cuda`.
 RUN [ -n "$CUDA" ] && \
     (curl -o protoc.zip -L https://github.com/protocolbuffers/protobuf/releases/download/v31.1/protoc-31.1-linux-x86_64.zip \
@@ -20,9 +25,9 @@ ARG NVCC_APPEND_FLAGS="--generate-code arch=compute_120,code=sm_120"
 COPY --chmod=755 scripts/sdk_installers/install_risc0_sdk.sh /tmp/install_risc0_sdk.sh
 
 # The install_risc0_sdk.sh script will respect these ENV variables.
-ENV RISC0_VERSION="3.0.4" \
+ENV RISC0_VERSION="3.0.6" \
     RISC0_CPP_VERSION="2024.1.5" \
-    RISC0_RUST_VERSION="1.88.0"
+    RISC0_RUST_VERSION="1.97.0"
 
 # Run the Risc0 SDK installation script
 # It will use the RISC0_VERSION, RISC0_CPP_VERSION and RISC0_RUST_VERSION defined above.

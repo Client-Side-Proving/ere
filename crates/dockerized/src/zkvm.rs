@@ -225,6 +225,9 @@ impl ServerContainer {
 
         // zkVM specific options
         cmd = match zkvm_kind {
+            zkVMKind::Jolt => cmd
+                .inherit_env("JOLT_MAX_TRACE_LENGTH")
+                .inherit_env("RUST_MIN_STACK"),
             zkVMKind::Risc0 => cmd
                 .inherit_env("ERE_RISC0_SEGMENT_PO2")
                 .inherit_env("ERE_RISC0_KECCAK_PO2"),

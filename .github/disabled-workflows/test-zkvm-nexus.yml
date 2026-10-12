@@ -1,4 +1,5 @@
-name: Test and clippy Ziren
+# Inactive workflow retained for reference in the CSP benchmark fork.
+name: Test and clippy Nexus
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,4 +16,4 @@ jobs:
     if: github.event_name == 'pull_request' || github.event.workflow_run.conclusion == 'success'
     uses: ./.github/workflows/test-zkvm.yml
     with:
-      zkvm: ziren
+      zkvm: nexus

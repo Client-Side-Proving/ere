@@ -1,5 +1,5 @@
 use ere_zkvm_interface::zkvm::CommonError;
-use jolt_core::utils::errors::ProofVerifyError;
+use jolt_sdk::jolt_verifier::VerifierError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -14,10 +14,16 @@ pub enum Error {
     #[error("Execution panics")]
     ExecutionPanic,
 
-    // Verify
-    #[error("Failed to construct verifier: {0}")]
-    VerifierInitFailed(ProofVerifyError),
+    #[error("Jolt preprocessing failed: {0}")]
+    PreprocessingFailed(String),
 
+    #[error("Jolt execution failed: {0}")]
+    ExecutionFailed(String),
+
+    #[error("Jolt proving failed: {0}")]
+    ProveFailed(String),
+
+    // Verify
     #[error("Verification failed: {0}")]
-    VerifyFailed(#[from] ProofVerifyError),
+    VerifyFailed(#[from] VerifierError),
 }

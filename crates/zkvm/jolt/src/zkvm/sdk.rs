@@ -1,20 +1,19 @@
-use crate::zkvm::Error;
+use crate::{program::JoltProgram, zkvm::Error};
 use core::{array::from_fn, cmp::min};
 use ere_zkvm_interface::zkvm::PublicValues;
-use jolt_ark_serialize::{self as ark_serialize, CanonicalDeserialize, CanonicalSerialize};
 use jolt_common::constants::{
     DEFAULT_HEAP_SIZE, DEFAULT_MAX_INPUT_SIZE, DEFAULT_MAX_OUTPUT_SIZE, DEFAULT_MAX_TRACE_LENGTH,
     DEFAULT_MAX_TRUSTED_ADVICE_SIZE, DEFAULT_MAX_UNTRUSTED_ADVICE_SIZE, DEFAULT_STACK_SIZE,
 };
 use jolt_sdk::{
-    Curve, F, JoltDevice, JoltProverPreprocessing, JoltSharedPreprocessing,
-    JoltVerifierPreprocessing, MemoryConfig, MemoryLayout, PCS, RV64IMACProof, RV64IMACProver,
-    RV64IMACVerifier,
-    guest::program::{decode, trace},
+    F, JoltDevice, JoltProverPreprocessing, JoltVerifierPreprocessing, MemoryConfig, MemoryLayout,
+    RV64IMACProof, TraceInputs, TracerBackend, VerifierPCS, VerifierTranscript, VerifierVC,
+    host::JoltProgramSource, preprocess_program, prove_program, verifier_preprocessing_from_prover,
 };
+use serde::{Deserialize, Serialize};
 use std::env;
 
-#[derive(CanonicalSerialize, CanonicalDeserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct JoltProof {
     proof: RV64IMACProof,
     outputs: Vec<u8>,
@@ -70,84 +69,68 @@ impl JoltConfig {
 }
 
 pub struct JoltSdk {
-    elf: Vec<u8>,
+    program: JoltProgram,
     memory_config: MemoryConfig,
-    pk: JoltProverPreprocessing<F, Curve, PCS>,
-    vk: JoltVerifierPreprocessing<F, Curve, PCS>,
+    pk: JoltProverPreprocessing,
+    vk: JoltVerifierPreprocessing,
 }
 
 impl JoltSdk {
-    pub fn new(elf: &[u8], config: JoltConfig) -> Self {
-        let (bytecode, memory_init, program_size) = decode(elf);
-        let memory_config = MemoryConfig {
+    pub fn new(mut program: JoltProgram, config: JoltConfig) -> Result<Self, Error> {
+        let mut memory_config = MemoryConfig {
             max_input_size: config.max_input_size,
             max_trusted_advice_size: config.max_trusted_advice_size,
             max_untrusted_advice_size: config.max_untrusted_advice_size,
             max_output_size: config.max_output_size,
             stack_size: config.stack_size,
             heap_size: config.heap_size,
-            program_size: Some(program_size),
+            program_size: None,
         };
-        let memory_layout = MemoryLayout::new(&memory_config);
-
-        // FIXME: Use public trusted setup or switch to other transparent PCS.
-        let shared = JoltSharedPreprocessing::new(
-            bytecode,
-            memory_layout,
-            memory_init,
+        let pk = preprocess_program(
+            &mut program,
+            memory_config,
             config.max_trace_length as usize,
-        );
-        let pk = JoltProverPreprocessing::new(shared);
-        let vk = JoltVerifierPreprocessing::from(&pk);
+            None,
+        )
+        .map_err(|err| Error::PreprocessingFailed(err.to_string()))?;
+        let vk = verifier_preprocessing_from_prover(&pk);
+        memory_config.program_size = Some(vk.program.memory_layout().program_size);
 
-        Self {
-            elf: elf.to_vec(),
+        Ok(Self {
+            program,
             memory_config,
             pk,
             vk,
-        }
+        })
     }
 
     pub fn execute(&self, input: &[u8]) -> Result<(PublicValues, u64), Error> {
-        // Use untrusted advice (aka private input) instead of input of Jolt device,
-        // which is public to verifier.
-        let untrusted_advice = input;
-        let (trace_iter, materialized_trace, _memory, io, _advice_tape) = trace(
-            &self.elf,
-            None,
-            &[],
-            untrusted_advice,
-            &[],
-            &self.memory_config,
-            None,
-        );
-        if io.panic {
+        // Untrusted advice carries private inputs; the Jolt device's input stream is public.
+        let program = self
+            .program
+            .build_jolt_program()
+            .map_err(|err| Error::ExecutionFailed(err.to_string()))?;
+        let trace = program
+            .trace_with(
+                &mut TracerBackend::new(),
+                TraceInputs::new(Vec::new(), input.to_vec(), Vec::new(), self.memory_config),
+            )
+            .map_err(|err| Error::ExecutionFailed(err.to_string()))?;
+        if trace.device.panic {
             return Err(Error::ExecutionPanic);
         }
-        let num_cycles = materialized_trace.len() + trace_iter.count();
-        let public_values = extract_public_values(&io.outputs)?;
+        let num_cycles = trace.trace.rows().len();
+        let public_values = extract_public_values(&trace.device.outputs)?;
         Ok((public_values, num_cycles as _))
     }
 
     pub fn prove(&self, input: &[u8]) -> Result<(PublicValues, JoltProof), Error> {
-        // Use untrusted advice (aka private input) instead of input of Jolt device,
-        // which is public to verifier.
-        let untrusted_advice = input;
-        let prover = RV64IMACProver::gen_from_elf(
-            &self.pk,
-            &self.elf,
-            &[],
-            untrusted_advice,
-            &[],
-            None,
-            None,
-            None,
-        );
-        let io = prover.program_io.clone();
+        // The SDK's zk feature enables Dory hiding commitments and BlindFold.
+        let (proof, io) = prove_program(&self.program, &self.pk, &[], input, &[], None, None, None)
+            .map_err(|err| Error::ProveFailed(err.to_string()))?;
         if io.panic {
             return Err(Error::ExecutionPanic);
         }
-        let (proof, _debug_info) = prover.prove();
 
         let public_values = extract_public_values(&io.outputs)?;
         let proof = JoltProof {
@@ -165,16 +148,20 @@ impl JoltSdk {
             ..Default::default()
         };
 
-        let verifier = RV64IMACVerifier::new(&self.vk, proof.proof, io_device, None, None)
-            .map_err(Error::VerifierInitFailed)?;
-        verifier.verify().map_err(Error::VerifyFailed)?;
+        jolt_sdk::jolt_verifier::verify::<F, VerifierPCS, VerifierVC, VerifierTranscript>(
+            &self.vk,
+            &io_device,
+            &proof.proof,
+            None,
+        )
+        .map_err(Error::VerifyFailed)?;
 
         let public_values = extract_public_values(&proof.outputs)?;
         Ok(public_values)
     }
 }
 
-// Note taht for execute the bytes are padded to size of multiple of 8, but for
+// Note that for execute the bytes are padded to size of multiple of 8, but for
 // prove the bytes are truncated.
 fn extract_public_values(output: &[u8]) -> Result<Vec<u8>, Error> {
     Ok(if output.is_empty() {

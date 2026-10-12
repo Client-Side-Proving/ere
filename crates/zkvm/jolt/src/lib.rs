@@ -7,8 +7,8 @@
 //!
 //! ## `Compiler` requirements
 //!
-//! - `jolt`
-//! - Install custom Rust toolchain via `jolt install-toolchain` - Used by `RustRv64imaCustomized`
+//! - Jolt CLI at the revision pinned by this repository.
+//! - Rust 1.95 or newer with the `riscv64imac-unknown-none-elf` target and `rust-src`.
 //!
 //! # `Compiler` implementation
 //!
@@ -16,7 +16,7 @@
 //!
 //! | Compiler                  | Language | Target                         | Note               |
 //! | ------------------------- | :------: | ------------------------------ | ------------------ |
-//! | `RustRv64imacCustomized`  |   Rust   | `riscv64imac-jolt-zkvm-elf`    | With `std` support |
+//! | `RustRv64imacCustomized`  |   Rust   | `riscv64imac-unknown-none-elf` | Uses the Jolt CLI |
 //! | `RustRv64imac`            |   Rust   | `riscv64imac-unknown-none-elf` |                    |
 //!
 //! # `zkVM` implementation
